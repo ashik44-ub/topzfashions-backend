@@ -2,7 +2,7 @@ const generateToken = require("../middleware/generateToken");
 const { errorResponse, successResponse } = require("../utils/responseHanlder");
 const User = require("./user.model");
 const sendEmail = require('../utils/sendEmail');
-
+const jwt = require('jsonwebtoken');
 
 
 const userRegister = async (req, res) => {
@@ -306,16 +306,26 @@ const resetPassword = async (req, res) => {
 //     }
 // }
 
+const generateToken = async (userId) => {
+    return jwt.sign({ userId }, process.env.JWT_SECRET_KEY, {
+        expiresIn: '7d',
+    });
+};
+
 const userLoggedIn = async (req, res) => {
     try {
         const { email, password } = req.body;
-        const user = await User.findOne({ email });
 
+        // 1. User find kora
+        const user = await User.findOne({ email });
         if (!user) {
-            return res.status(404).send({ message: 'User not found' });
+            return res.status(404).send({ 
+                success: false, 
+                message: 'User not found' 
+            });
         }
 
-        // --- ইমেইল ভেরিফাইড কি না চেক ---
+        // 2. Email Verified ki na check kora
         if (!user.isVerified) {
             return res.status(401).send({
                 success: false,
@@ -325,23 +335,31 @@ const userLoggedIn = async (req, res) => {
             });
         }
 
+        // 3. Password match kora
         const isMatch = await user.comparePassword(password);
         if (!isMatch) {
-            return res.status(401).send({ message: 'Invalid Password!' });
+            return res.status(401).send({ 
+                success: false, 
+                message: 'Invalid Password!' 
+            });
         }
 
+        // 4. Token Generate kora
         const token = await generateToken(user._id);
 
+        // 5. Cookie set kora (Vercel/Production optimized)
         res.cookie('token', token, {
-            httpOnly: true,
-            secure: true,
-            sameSite: "None"
+            httpOnly: true,    // Client-side JS jate access na korte pare
+            secure: true,      // HTTPS chara kaj korbe na (Vercel-e default thake)
+            sameSite: 'none',  // Cross-domain cookie-r jonno must
+            maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
         });
 
-        // এখানে সব ফিল্ড পাঠানো হচ্ছে যাতে লগআউট-লগইন করলেও ডাটা হারানো না যায়
-        res.status(200).send({
+        // 6. Response pathano
+        return res.status(200).send({
+            success: true,
             message: "Logged in Successfully",
-            token,
+            token, // Mobile app ba header authentication-er jonno token pathano bhalo
             user: {
                 _id: user._id,
                 username: user.username,
@@ -350,14 +368,17 @@ const userLoggedIn = async (req, res) => {
                 profileImage: user.profileImage, 
                 bio: user.bio,
                 profession: user.profession,
-                dob: user.dob,     // নতুন যোগ করা হয়েছে
-                gender: user.gender // নতুন যোগ করা হয়েছে
+                dob: user.dob,
+                gender: user.gender
             }
         });
 
     } catch (error) {
-        console.error("Error Login User", error);
-        res.status(500).send({ message: "Login failed" });
+        console.error("Error Login User:", error);
+        return res.status(500).send({ 
+            success: false, 
+            message: "Internal Server Error during login" 
+        });
     }
 }
 
