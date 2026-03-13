@@ -1,32 +1,48 @@
 const jwt = require('jsonwebtoken');
-const { errorResponse, successResponse } = require('../utils/responseHanlder');
 const jwt_secret = process.env.JWT_SECRET_KEY;
 
 const verifyToken = (req, res, next) => {
     try {
-        // 1. Optional Chaining (?.) use koro jate cookies na thakle crash na kore
-        const token = req.cookies?.token;
+        /** * Logic Repair: 
+         * Production (Vercel)-এ অনেক সময় ব্রাউজার কুকি পাঠাতে পারে না। 
+         * তাই আমরা প্রথমে Cookies এবং তারপর Authorization Header থেকে টোকেন চেক করব।
+         */
+        const token = req.cookies?.token || req.headers.authorization?.split(' ')[1];
 
         if (!token) {
-            // Token na thakle 401 (Unauthorized) status dewa uchit
-            return res.status(401).send({ message: "Token not found! Please login." });
+            return res.status(401).send({ 
+                success: false,
+                message: "লগইন করা নেই! দয়া করে টোকেন প্রদান করুন।" 
+            });
         }
 
+        // টোকেন ভেরিফাই করা
         const decoded = jwt.verify(token, jwt_secret);
 
         if (!decoded.userId) {
-            return res.status(403).send({ message: "User ID not found in token" });
+            return res.status(403).send({ 
+                success: false,
+                message: "টোকেনটি সঠিক নয় (User ID missing)" 
+            });
         }
 
-        // 2. Logic Fix: decoded object theke userId-ti assign koro
+        // রিকোয়েস্ট অবজেক্টে ডেটা সেট করা
         req.userId = decoded.userId; 
         req.role = decoded.role;
         
         next();
     } catch (error) {
-        // Token expired ba tampered hole catch block-e asbe
-        console.error("JWT Error:", error.message);
-        return res.status(401).send({ message: "Invalid or Expired Token!" });
+        console.error("JWT Verification Error:", error.message);
+        
+        // টোকেন এক্সপায়ার হয়ে গেলে বা ভুল হলে এই মেসেজ যাবে
+        const message = error.name === 'TokenExpiredError' 
+            ? "আপনার সেশন শেষ হয়ে গেছে, আবার লগইন করুন।" 
+            : "অবৈধ টোকেন!";
+
+        return res.status(401).send({ 
+            success: false, 
+            message: message 
+        });
     }
 }
 

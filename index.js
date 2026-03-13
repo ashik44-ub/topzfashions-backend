@@ -15,8 +15,14 @@ const port = process.env.PORT || 5000;
 app.use(express.json());
 app.use(cookieParser());
 app.use(cors({
-    origin: ['http://localhost:5173', 'https://topzfashons.vercel.app'], // Removed trailing slash for better CORS support
-    credentials: true
+    origin: [
+        'http://localhost:5173', 
+        'https://topzfashons.vercel.app', 
+        'https://topzfashons-frontend.vercel.app' // ব্যাকআপ হিসেবে আগের লিঙ্কটিও রাখলাম
+    ],
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
 }));
 
 const UploadImage = require('./src/utils/UploadImage.js')
@@ -87,10 +93,10 @@ app.post('/order', async (req, res) => {
             total_amount: amount, // এখানেও amount (২৩৫০) যাচ্ছে
             currency: 'BDT',
             tran_id: trans_id,
-            success_url: `http://localhost:5000/payment/success/${trans_id}`,
-            fail_url: `http://localhost:5000/payment/fail/${trans_id}`,
-            cancel_url: 'http://localhost:5000/cancel',
-            ipn_url: 'http://localhost:5000/ipn',
+            success_url: `https://topzfashions-backend.vercel.app/payment/success/${trans_id}`,
+            fail_url: `https://topzfashions-backend.vercel.app/payment/fail/${trans_id}`,
+            cancel_url: 'https://topzfashions-backend.vercel.app/cancel',
+            ipn_url: 'https://topzfashions-backend.vercel.app/ipn',
             shipping_method: 'Courier',
             product_name: products.map(p => p.name).join(', '),
             product_category: 'Ecommerce',
