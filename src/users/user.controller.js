@@ -196,157 +196,55 @@ const resetPassword = async (req, res) => {
     }
 };
 
-
-// const userRegister = async (req, res) => {
-//     try {
-//         const {username, email, password} = req.body;
-//         const newUser = new User({
-//             username, email, password
-//         });
-//         await newUser.save();
-//         res.status(200).send({ message: "Registration Successful!" });
-//     } catch (error) {
-//         res.status(500).send({ message: "Registration Failed!" });
-//     }
-// }
-
-// user login
-// const userLoggedIn = async(req, res)=> {
-
-//     try {
-//         const {email, password} = req.body;
-//         const user = await User.findOne({email});
-//         if (!user) {
-//             return res.status(404).send({meassage: 'user not found'})
-//         }
-//         //compares pasword model  a giye define kore dite hobe
-//         const isMatch = await user.comparePassword(password);
-//         if (!isMatch) {
-//             return res.status(401).send({meassage: 'Invalid Password!'})
-//         }
-
-//         //token create
-//         const token = await generateToken(user._id);
-//         // set cookie in front website
-//         res.cookie('token', token, {
-//             httpOnly: true,
-//             secure: true,
-//             sameSite: "None"
-//         })
-//         res.status(200).send({
-//             message: "Logged in Successfull",
-//             token,
-//             user: {
-//                 _id: user._id,
-//                 username: user.username,
-//                 email: user.email,
-//                 role: user.role,
-//                 profileprofileImage: user.profileImage,
-//                 bio: user.bio,
-//                 profession: user.profession
-//             }
-//         })
-
-//     } catch (error) {
-//         console.error("Error Login User", error);
-//         res.status(500).send({message: "Login failed"})
-//     }
-// }
-
-// const userLoggedIn = async (req, res) => {
-//     try {
-//         const { email, password } = req.body;
-//         const user = await User.findOne({ email });
-
-//         if (!user) {
-//             return res.status(404).send({ message: 'User not found' });
-//         }
-
-//         // --- আপডেট করা চেক: ইমেইল ভেরিফাইড কি না এবং প্রয়োজনীয় ডাটা পাঠানো ---
-//         if (!user.isVerified) {
-//             return res.status(401).send({
-//                 success: false,
-//                 notVerified: true, // ফ্রন্টএন্ডে রিডাইরেক্ট করার জন্য ফ্ল্যাগ
-//                 email: user.email, // ওটিপি পেজে ব্যবহারের জন্য ইমেইল
-//                 message: "Your email is not verified! Please check your email for OTP."
-//             });
-//         }
-//         // -----------------------------------------------------------
-
-//         const isMatch = await user.comparePassword(password);
-//         if (!isMatch) {
-//             return res.status(401).send({ message: 'Invalid Password!' });
-//         }
-
-//         const token = await generateToken(user._id);
-
-//         res.cookie('token', token, {
-//             httpOnly: true,
-//             secure: true,
-//             sameSite: "None"
-//         });
-
-//         res.status(200).send({
-//             message: "Logged in Successfully",
-//             token,
-//             user: {
-//                 _id: user._id,
-//                 username: user.username,
-//                 email: user.email,
-//                 role: user.role,
-//                 profileImage: user.profileImage, 
-//                 bio: user.bio,
-//                 profession: user.profession
-//             }
-//         });
-
-//     } catch (error) {
-//         console.error("Error Login User", error);
-//         res.status(500).send({ message: "Login failed" });
-//     }
-// }
-
-
-const userLoggedIn = async(req, res)=>  {
+const userLoggedIn = async (req, res) => {
     try {
-        const {email, password} = req.body;
-        const user = await User.findOne({email});
+        const { email, password } = req.body;
+        const user = await User.findOne({ email });
+
         if (!user) {
-            return res.status(404).send({message: "user not found"});
+            return res.status(404).send({ message: "User not found" });
         }
-        //compares pasword model  a giye define kore dite hobe
+
+        // পাসওয়ার্ড কম্পেয়ার করার সময় bcrypt এরর দিচ্ছে কি না তা চেক করুন
         const isMatch = await user.comparePassword(password);
-
         if (!isMatch) {
-            return res.status(401).send({message: "invalid user password"});
+            return res.status(401).send({ message: "Invalid user password" });
         }
 
-        //token generate
+        // টোকেন জেনারেট করার সময় এরর হলে এটি ধরবে
         const token = await generateToken(user._id);
-        //set cookie front of the website
+        if (!token) {
+            throw new Error("Token generation failed");
+        }
+
+        // কুকি সেট করা
         res.cookie('token', token, {
             httpOnly: true,
-            secure: true,
-            sameSite: "None"
-        })
-        res.status(200).send({
-            message: "Logged in succesfull",
+            secure: true,      // HTTPS এ ট্রু হতে হবে
+            sameSite: "none"   // ছোট হাতের অক্ষরে লেখা ভালো
+        });
+
+        return res.status(200).send({
+            message: "Logged in successfully",
             token,
             user: {
                 _id: user._id,
                 username: user.username,
                 email: user.email,
                 role: user.role,
-                profileprofileImage: user.profileImage,
+                profileImage: user.profileImage, // বানান ঠিক করা হয়েছে
                 bio: user.bio,
                 profession: user.profession
             }
-        })
-
+        });
 
     } catch (error) {
-        console.error("Error Login User", error);
-        res.status(500).send({message: "Login failed"})
+        // এই কনসোল লগটি Vercel Logs এ দেখা যাবে আসল সমস্যা ধরার জন্য
+        console.error("Error Login User:", error.message);
+        res.status(500).send({ 
+            message: "Login failed", 
+            error: error.message // ডেভেলপমেন্টের জন্য এটি পাঠাতে পারেন আসল ভুল দেখতে
+        });
     }
 }
 
