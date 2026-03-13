@@ -87,10 +87,10 @@ app.post('/order', async (req, res) => {
             total_amount: amount, // এখানেও amount (২৩৫০) যাচ্ছে
             currency: 'BDT',
             tran_id: trans_id,
-            success_url: `https://topzfashions-backend.vercel.app/payment/success/${trans_id}`,
-            fail_url: `https://topzfashions-backend.vercel.app/payment/fail/${trans_id}`,
-            cancel_url: 'https://topzfashions-backend.vercel.app/cancel',
-            ipn_url: 'https://topzfashions-backend.vercel.app/ipn',
+            success_url: `http://localhost:5000/payment/success/${trans_id}`,
+            fail_url: `http://localhost:5000/payment/fail/${trans_id}`,
+            cancel_url: 'http://localhost:5000/cancel',
+            ipn_url: 'http://localhost:5000/ipn',
             shipping_method: 'Courier',
             product_name: products.map(p => p.name).join(', '),
             product_category: 'Ecommerce',
@@ -140,26 +140,6 @@ app.get('/order', async (req, res) => {
 });
 
 
-
-// ২. পেমেন্ট সাকসেস রাউট (এটা /order এর বাইরে থাকবে)
-// app.post("/payment/success/:tranId", async (req, res) => {
-//     try {
-//         const { tranId } = req.params;
-//         const result = await Order.updateOne(
-//             { transactionId: tranId },
-//             { $set: { paidStatus: true } }
-//         );
-
-//         if (result.modifiedCount > 0) {
-//             res.redirect(`http://localhost:5173/payment/success/${tranId}`);
-//         } else {
-//             res.redirect(`http://localhost:5173/payment/fail/${tranId}`);
-//         }
-//     } catch (error) {
-//         res.status(500).send("Internal Server Error");
-//     }
-// });
-
 app.post('/payment/success/:tranId', async (req, res) => {
     try {
         const { tranId } = req.params;
@@ -173,7 +153,7 @@ app.post('/payment/success/:tranId', async (req, res) => {
 
         // ২. ডাবল আপডেট প্রোটেকশন
         if (order.paidStatus === true) {
-            return res.redirect(`http://localhost:5173/payment/success/${tranId}`);
+            return res.redirect(`https://topzfashons.vercel.app/payment/success/${tranId}`);
         }
 
         // ৩. স্টক আপডেট লজিক
@@ -198,7 +178,7 @@ app.post('/payment/success/:tranId', async (req, res) => {
         order.status = "pending"; // আপনি এখানে "pending" চেয়েছিলেন
         await order.save();
 
-        res.redirect(`http://localhost:5173/payment/success/${tranId}`);
+        res.redirect(`https://topzfashons.vercel.app/payment/success/${tranId}`);
 
     } catch (error) {
         console.error("Success route error:", error);
@@ -211,7 +191,7 @@ app.post("/payment/fail/:tranId", async (req, res) => {
     try {
         const { tranId } = req.params;
         await Order.deleteOne({ transactionId: tranId, paidStatus: false });
-        res.redirect(`http://localhost:5173/payment/fail/${tranId}`);
+        res.redirect(`https://topzfashons.vercel.app/payment/fail/${tranId}`);
     } catch (error) {
         res.status(500).send("Error deleting failed order");
     }
@@ -234,7 +214,7 @@ app.post("/payment/cancel/:tranId", async (req, res) => {
         }
 
         // ইউজারকে আবার কার্ট পেজে পাঠিয়ে দিন
-        res.redirect(`http://localhost:5173/cart`); 
+        res.redirect(`https://topzfashons.vercel.app/cart`); 
     } catch (error) {
         console.error("Cancel Route Error:", error);
         res.status(500).send("Internal Server Error");
@@ -248,7 +228,7 @@ app.post("/payment/fail/:tranId", async (req, res) => {
         await Order.findOneAndDelete({ transactionId: tranId, paidStatus: false });
         
         // ইউজারকে ফেইল পেজে রিডাইরেক্ট করুন
-        res.redirect(`http://localhost:5173/payment/fail/${tranId}`);
+        res.redirect(`https://topzfashons.vercel.app/payment/fail/${tranId}`);
     } catch (error) {
         res.status(500).send("Internal Server Error");
     }
