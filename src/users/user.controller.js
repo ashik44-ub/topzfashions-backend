@@ -2,7 +2,7 @@ const generateToken = require("../middleware/generateToken");
 const { errorResponse, successResponse } = require("../utils/responseHanlder");
 const User = require("./user.model");
 const sendEmail = require('../utils/sendEmail');
-const jwt = require('jsonwebtoken');
+
 
 
 const userRegister = async (req, res) => {
@@ -306,79 +306,47 @@ const resetPassword = async (req, res) => {
 //     }
 // }
 
-const generateToken = async (userId) => {
-    return jwt.sign({ userId }, process.env.JWT_SECRET_KEY, {
-        expiresIn: '7d',
-    });
-};
 
-const userLoggedIn = async (req, res) => {
+const userLoggedIn = async(req, res)=>  {
     try {
-        const { email, password } = req.body;
-
-        // 1. User find kora
-        const user = await User.findOne({ email });
+        const {email, password} = req.body;
+        const user = await User.findOne({email});
         if (!user) {
-            return res.status(404).send({ 
-                success: false, 
-                message: 'User not found' 
-            });
+            return res.status(404).send({message: "user not found"});
         }
-
-        // 2. Email Verified ki na check kora
-        if (!user.isVerified) {
-            return res.status(401).send({
-                success: false,
-                notVerified: true, 
-                email: user.email, 
-                message: "Your email is not verified! Please check your email for OTP."
-            });
-        }
-
-        // 3. Password match kora
+        //compares pasword model  a giye define kore dite hobe
         const isMatch = await user.comparePassword(password);
+
         if (!isMatch) {
-            return res.status(401).send({ 
-                success: false, 
-                message: 'Invalid Password!' 
-            });
+            return res.status(401).send({message: "invalid user password"});
         }
 
-        // 4. Token Generate kora
+        //token generate
         const token = await generateToken(user._id);
-
-        // 5. Cookie set kora (Vercel/Production optimized)
+        //set cookie front of the website
         res.cookie('token', token, {
-            httpOnly: true,    // Client-side JS jate access na korte pare
-            secure: true,      // HTTPS chara kaj korbe na (Vercel-e default thake)
-            sameSite: 'none',  // Cross-domain cookie-r jonno must
-            maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
-        });
-
-        // 6. Response pathano
-        return res.status(200).send({
-            success: true,
-            message: "Logged in Successfully",
-            token, // Mobile app ba header authentication-er jonno token pathano bhalo
+            httpOnly: true,
+            secure: true,
+            sameSite: "None"
+        })
+        res.status(200).send({
+            message: "Logged in succesfull",
+            token,
             user: {
                 _id: user._id,
                 username: user.username,
                 email: user.email,
                 role: user.role,
-                profileImage: user.profileImage, 
+                profileprofileImage: user.profileImage,
                 bio: user.bio,
-                profession: user.profession,
-                dob: user.dob,
-                gender: user.gender
+                profession: user.profession
             }
-        });
+        })
+
 
     } catch (error) {
-        console.error("Error Login User:", error);
-        return res.status(500).send({ 
-            success: false, 
-            message: "Internal Server Error during login" 
-        });
+        console.error("Error Login User", error);
+        res.status(500).send({message: "Login failed"})
     }
 }
 
