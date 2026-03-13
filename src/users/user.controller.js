@@ -364,27 +364,14 @@ const userLoggedIn = async (req, res) => {
 // logout router code
 const userlogout = async (req, res) => {
     try {
-        // clearCookie করার সময় সেটিংসগুলো হুবহু লগইন কুকির মতো হতে হবে
         res.clearCookie("token", {
             httpOnly: true,
-            secure: true,      // প্রোডাকশনে এটি মাস্ট
-            sameSite: "none"   // এখানে 'none' ছোট হাতের অক্ষরে লিখুন
+            secure: true,
+            sameSite: "None"
         });
-
-        // যদি successResponse আপনার কাস্টম ইউটিল হয়, তবে নিশ্চিত করুন এটি ডিফাইন করা আছে
-        if (typeof successResponse === 'function') {
-            return successResponse(res, 200, "Logged Out Successfully");
-        } else {
-            return res.status(200).send({ message: "Logged Out Successfully" });
-        }
-        
+        successResponse(res, 200, "Logged Out Successfully")
     } catch (error) {
-        console.error("Logout Error:", error.message);
-        if (typeof errorResponse === 'function') {
-            return errorResponse(res, 500, "Logged out failed", error);
-        } else {
-            return res.status(500).send({ message: "Logged out failed" });
-        }
+        errorResponse(res, 500, "logged out failed", error)
     }
 }
 

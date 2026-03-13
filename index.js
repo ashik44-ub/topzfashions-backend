@@ -15,18 +15,9 @@ const port = process.env.PORT || 5000;
 app.use(express.json());
 app.use(cookieParser());
 app.use(cors({
-    origin: [
-        'http://localhost:5173', 
-        'https://topzfashons.vercel.app', 
-        'https://topzfashons-frontend.vercel.app'
-    ],
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'], // এখানে PATCH যোগ করা হয়েছে
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+    origin: ['http://localhost:5173', 'https://topzfashons.vercel.app'], // Removed trailing slash for better CORS support
+    credentials: true
 }));
-
-// ব্রাউজারের Preflight রিকোয়েস্ট হ্যান্ডেল করার জন্য নিচের লাইনটি যোগ করা ভালো
-app.options('*', cors());
 
 const UploadImage = require('./src/utils/UploadImage.js')
 // 2. Routes (Verify this folder path in your sidebar!)
