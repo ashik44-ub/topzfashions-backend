@@ -3,42 +3,65 @@ const mongoose = require('mongoose');
 const productSchema = new mongoose.Schema({
     name: {
         type: String,
-        required: true,
+        required: [true, "Product name is required"],
         trim: true
     },
     sku: { 
         type: String, 
-        required: true, 
-        unique: true // Unique SKU thaka bhalo e-commerce er jonno
+        required: [true, "SKU is required"], 
+        unique: true,
+        trim: true
     },
-    category: String,
+    category: {
+        type: String,
+        required: [true, "Category is required"]
+    },
     gender: {
         type: String,
-        required: true
+        required: [true, "Gender is required"],
+        enum: ['man', 'woman', 'unisex'] // আপনি চাইলে এটি ফিক্সড করে দিতে পারেন
     },
-    description: String,
+    brand: { 
+        type: String,
+        required: [true, "Brand is required"],
+        trim: true
+    },
+    description: {
+        type: String,
+        default: ""
+    },
     price: {
         type: Number,
-        required: true
+        required: [true, "Price is required"],
+        min: 0
     },
     oldprice: {
         type: Number,
-        required: true
+        default: 0
     },
-    oldPrice: Number, // JSON e 'oldprice' chilo, schema-te 'oldPrice' (CamelCase standard)
     image: {
         type: String,
-        required: true
+        required: [true, "Product image is required"]
     },
-    color: String,
-    size: [String], // Array of strings: ["40", "42", "44"]
+    color: {
+        type: String,
+        default: ""
+    },
+    size: {
+        type: [String], // Array of strings
+        default: []
+    },
     quantity: {
         type: Number,
-        default: 1
+        required: true,
+        default: 1,
+        min: 0
     },
     rating: {
         type: Number,
-        default: 0
+        default: 0,
+        min: 0,
+        max: 5
     },
     author: {
         type: mongoose.Schema.Types.ObjectId,
@@ -46,9 +69,10 @@ const productSchema = new mongoose.Schema({
         required: true
     }
 }, {
-    timestamps: true // createdAt ebong updatedAt auto handle korbe
+    timestamps: true 
 });
 
+// মডেল তৈরি
 const Products = mongoose.model("Product", productSchema);
 
 module.exports = Products;

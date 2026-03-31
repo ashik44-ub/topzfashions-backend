@@ -3,50 +3,84 @@ const { errorResponse, successResponse } = require("../utils/responseHanlder")
 const Products = require("./products.model")
 const cloudinary = require('cloudinary').v2;
 
+// const createNewProduct = async (req, res) => {
+//     try {
+//         // ১. ডিবাগিং: ফ্রন্টএন্ড থেকে আসা ডাটা চেক করা (ঐচ্ছিক)
+//         // console.log("Incoming Data:", req.body);
+
+//         // ২. নতুন প্রোডাক্ট অবজেক্ট তৈরি
+//         const newProduct = new Products({
+//             ...req.body,
+//             // নিশ্চিত করা হচ্ছে যে এগুলো নাম্বার হিসেবেই সেভ হবে
+//             price: Number(req.body.price),
+//             oldprice: Number(req.body.oldprice),
+//             quantity: Number(req.body.quantity || 1),
+//             rating: 0, // নতুন প্রোডাক্টের শুরুতে কোনো রেটিং থাকবে না
+//             author: req.body.author // ফ্রন্টএন্ড থেকে আসা ইউজার আইডি
+//         });
+
+//         // ৩. ডাটাবেসে সেভ করা
+//         const saveProduct = await newProduct.save();
+
+//         /* নোট: এখানে Reviews.find করার দরকার নেই। 
+//            কারণ একটি নতুন তৈরি হওয়া প্রোডাক্টের কোনো রিভিউ ডাটাবেসে আগে থেকে থাকতে পারে না। 
+//         */
+
+//         // ৪. আপনার কাস্টম সাকসেস রেসপন্স পাঠানো
+//         return successResponse(res, 201, "Product Created Successfully!", saveProduct);
+
+//     } catch (error) {
+//         // ৫. টার্মিনালে এররটি প্রিন্ট করা (ডেভেলপমেন্টের জন্য জরুরি)
+//         console.error("Mongoose Save Error:", error.message);
+
+//         // ৬. এরর মেসেজ হ্যান্ডেল করা
+//         let errorMessage = "Failed to create new product";
+        
+//         // যদি একই SKU আগে ব্যবহার করা হয়ে থাকে (Unique Key Error)
+//         if (error.code === 11000) {
+//             errorMessage = "This SKU already exists! Please use a unique SKU code.";
+//         } else if (error.name === "ValidationError") {
+//             errorMessage = `Validation Error: ${error.message}`;
+//         }
+
+//         // আপনার কাস্টম এরর রেসপন্স পাঠানো
+//         return errorResponse(res, 500, errorMessage, error.message);
+//     }
+// }
+
 const createNewProduct = async (req, res) => {
     try {
-        // ১. ডিবাগিং: ফ্রন্টএন্ড থেকে আসা ডাটা চেক করা (ঐচ্ছিক)
-        // console.log("Incoming Data:", req.body);
+        const { 
+            name, sku, category, gender, brand, 
+            description, price, oldprice, image, 
+            color, size, quantity, author 
+        } = req.body;
 
-        // ২. নতুন প্রোডাক্ট অবজেক্ট তৈরি
         const newProduct = new Products({
-            ...req.body,
-            // নিশ্চিত করা হচ্ছে যে এগুলো নাম্বার হিসেবেই সেভ হবে
-            price: Number(req.body.price),
-            oldprice: Number(req.body.oldprice),
-            quantity: Number(req.body.quantity || 1),
-            rating: 0, // নতুন প্রোডাক্টের শুরুতে কোনো রেটিং থাকবে না
-            author: req.body.author // ফ্রন্টএন্ড থেকে আসা ইউজার আইডি
+            name,
+            sku,
+            category,
+            gender,
+            brand, // সরাসরি এখান থেকে ভ্যালু নিচ্ছে
+            description,
+            price: Number(price),
+            oldprice: Number(oldprice || 0),
+            image,
+            color,
+            size,
+            quantity: Number(quantity || 1),
+            author,
+            rating: 0
         });
 
-        // ৩. ডাটাবেসে সেভ করা
         const saveProduct = await newProduct.save();
-
-        /* নোট: এখানে Reviews.find করার দরকার নেই। 
-           কারণ একটি নতুন তৈরি হওয়া প্রোডাক্টের কোনো রিভিউ ডাটাবেসে আগে থেকে থাকতে পারে না। 
-        */
-
-        // ৪. আপনার কাস্টম সাকসেস রেসপন্স পাঠানো
         return successResponse(res, 201, "Product Created Successfully!", saveProduct);
 
     } catch (error) {
-        // ৫. টার্মিনালে এররটি প্রিন্ট করা (ডেভেলপমেন্টের জন্য জরুরি)
-        console.error("Mongoose Save Error:", error.message);
-
-        // ৬. এরর মেসেজ হ্যান্ডেল করা
-        let errorMessage = "Failed to create new product";
-        
-        // যদি একই SKU আগে ব্যবহার করা হয়ে থাকে (Unique Key Error)
-        if (error.code === 11000) {
-            errorMessage = "This SKU already exists! Please use a unique SKU code.";
-        } else if (error.name === "ValidationError") {
-            errorMessage = `Validation Error: ${error.message}`;
-        }
-
-        // আপনার কাস্টম এরর রেসপন্স পাঠানো
-        return errorResponse(res, 500, errorMessage, error.message);
+        console.error("Backend Error:", error.message);
+        return errorResponse(res, 500, "Failed to create product", error.message);
     }
-}
+};
 
 const getAllProducts = async (req, res) => {
     try {
@@ -134,20 +168,6 @@ const updateProductByid = async (req, res) => {
         errorResponse(res, 500, "Failed to update", error)
     }
 }
-
-// const deleteProductById = async (req, res) => {
-//     const productId = req.params.id;
-//     try {
-//         const deleteProduct = await Products.findByIdAndDelete(productId);
-//         if (!deleteProduct) {
-//             return errorResponse(res, 404, "Product not deleted")
-//         }
-//         await Reviews.deleteMany({productId: productId});
-//         return successResponse(res, 200, "Product Deleted Successfully!")
-//     } catch (error) {
-//         return errorResponse(res, 500, "Failed to Delete Product", error)
-//     } 
-// }
 
 const deleteProductById = async (req, res) => {
     const productId = req.params.id;
